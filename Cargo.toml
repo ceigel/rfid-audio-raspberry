@@ -1,0 +1,13 @@
+[package]
+name = "hello"
+version = "0.1.0"
+authors = ["Cristian Eigel <eigelc@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mfrc522 = "0.2.0"
+linux-embedded-hal = "0.2.2"
+hex = "0.4.0"
+rodio = "0.10.0"
