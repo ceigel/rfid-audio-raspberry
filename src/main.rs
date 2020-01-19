@@ -77,6 +77,7 @@ fn main() {
                             if let Some(sink) = old_sink {
                                 sink.stop();
                             }
+                            println!("Playing {}", fname);
                         }
                     },
                     Err(error) => {
