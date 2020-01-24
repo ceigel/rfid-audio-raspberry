@@ -202,16 +202,6 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "hello"
-version = "0.1.0"
-dependencies = [
- "hex 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "linux-embedded-hal 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "mfrc522 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rodio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "hex"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -413,6 +403,16 @@ dependencies = [
 name = "regex-syntax"
 version = "0.6.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "rfid-audio"
+version = "0.1.0"
+dependencies = [
+ "hex 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "linux-embedded-hal 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mfrc522 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rodio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "rodio"

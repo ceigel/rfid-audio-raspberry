@@ -1,5 +1,5 @@
 [package]
-name = "hello"
+name = "rfid-audio"
 version = "0.1.0"
 authors = ["Cristian Eigel <eigelc@gmail.com>"]
 edition = "2018"
