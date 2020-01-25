@@ -1,19 +1,6 @@
-//! Raspberry Pi demo
-//! //!
-//! //! # Connections
-//! //!
-//! //! IMPORTANT: Do *not* use PIN24 / BCM8 / CE0 as the NSS pin
-//! //!
-//! //! - PIN1 = 3V3 = VCC
-//! //! - PIN19 = BCM10 = MOSI
-//! //! - PIN21 = BCM9 = MISO (SCL)
-//! //! - PIN23 = BCM11 = SCLK
-//! //! - PIN22 = BCM25 = NSS (SDA)
-//! //! - PIN6 = GND = GND
-
+extern crate hex;
 extern crate linux_embedded_hal as hal;
 extern crate mfrc522;
-extern crate hex;
 extern crate rodio;
 
 use std::io::BufReader;
@@ -72,14 +59,15 @@ fn main() {
                 let fname = format!("music/{}.mp3", encoded_id);
                 match std::fs::File::open(&fname) {
                     Ok(opened_file) => {
-                        if let Ok(new_sink) = rodio::play_once(&device, BufReader::new(opened_file)) {
+                        if let Ok(new_sink) = rodio::play_once(&device, BufReader::new(opened_file))
+                        {
                             let old_sink = current_sink.replace(new_sink);
                             if let Some(sink) = old_sink {
                                 sink.stop();
                             }
                             println!("Playing {}", fname);
                         }
-                    },
+                    }
                     Err(error) => {
                         println!("Error opening {}: {}", fname, error);
                     }
