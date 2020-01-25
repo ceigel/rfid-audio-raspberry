@@ -11,17 +11,6 @@ use hal::{Pin, Spidev};
 use mfrc522::Mfrc522;
 use std::thread;
 use std::time::Duration;
-// NOTE this requires tweaking permissions and configuring LED0
-//
-// ```
-// $ echo gpio | sudo tee /sys/class/leds/led0/trigger
-// $ sudo chown root:gpio /sys/class/leds/led0/brightness
-// $ sudo chmod 770 /sys/class/leds/led0/brightness
-// ```
-//
-// Alternatively you can omit the LED and comment out the contents of the `on` and `off` methods
-// below
-
 fn setup_rfid_reader() -> Mfrc522<Spidev, Pin> {
     let mut spi = Spidev::open("/dev/spidev0.0").unwrap();
     let options = SpidevOptions::new()
