@@ -79,7 +79,7 @@ fn read_maps(mapping_file: &OsStr) -> Result<HashMap<String, String>> {
     for line in mapping_buf.lines() {
         let line = line?;
         let line = line.trim();
-        if line.find('#') == Some(0) {
+        if line.is_empty() || line.find('#') == Some(0) {
             continue;
         }
         let fields: Vec<&str> = line.split(" ").collect();

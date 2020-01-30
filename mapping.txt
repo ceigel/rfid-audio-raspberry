@@ -1,1 +1,15 @@
-# this is an example mapping file
+# Format: 
+# card-hex mp3-file
+
+# available cards
+# b9bf9d84
+# b08ed632
+# 221c4634
+# d4fc9e2a
+# d46af82a
+# 242cc82b
+# 1488e42b
+# f4da1e2a
+# 0489af2b
+# f460482a
+# 226c0334
