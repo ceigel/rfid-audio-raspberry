@@ -9,8 +9,6 @@ extern crate linux_embedded_hal as hal;
 extern crate mfrc522;
 extern crate rodio;
 
-use std::io::BufReader;
-
 use clap::{App, Arg, ArgMatches};
 use core::convert::TryFrom;
 use hal::spidev::SpidevOptions;
@@ -22,7 +20,7 @@ use std::collections::HashMap;
 use std::env;
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Result};
+use std::io::{BufRead, BufReader, Error, ErrorKind, Result};
 use std::path::PathBuf;
 use std::process;
 use std::thread;
@@ -55,7 +53,7 @@ fn setup_rfid_reader() -> Result<Mfrc522<Spidev, Pin>> {
     if vers == 0x91 || vers == 0x92 {
         Ok(mfrc522)
     } else {
-        Err(Error::new(ErrorKind::NotFound, "Couldn't find RFID reader")
+        Err(Error::new(ErrorKind::NotFound, "Couldn't find RFID reader"))
     }
 }
 
@@ -68,7 +66,7 @@ fn setup_signals() {
     }
 }
 
-fn files_dir(arg_dir: Option<&str>) -> Result<String> {
+fn files_directory(arg_dir: Option<&str>) -> Result<String> {
     let current_dir: String = env::current_dir()?.to_str().unwrap().to_string();
     let dir = arg_dir.map(|dir| dir.to_string()).unwrap_or(current_dir);
     Ok(dir)
@@ -80,8 +78,14 @@ fn read_maps(mapping_file: &OsStr) -> Result<HashMap<String, String>> {
     let mapping_buf = BufReader::new(mapping_file);
     for line in mapping_buf.lines() {
         let line = line?;
+        let line = line.trim();
+        if line.find('#') == Some(0) {
+            continue;
+        }
         let fields: Vec<&str> = line.split(" ").collect();
-        maps.insert(fields[0].to_string(), fields[fields.len() - 1].to_string());
+        let (key, file) = (fields[0].to_string(), fields[fields.len() - 1].to_string());
+        debug!("{} - {}", key, file);
+        maps.insert(key, file);
     }
     Ok(maps)
 }
@@ -92,18 +96,23 @@ struct FileMapper {
 }
 
 impl FileMapper {
-    fn new(files_dir: String, mapping: HashMap<String, String>) -> Self {
-        let files_dir = files_dir.into();
-        FileMapper { files_dir, mapping }
+    pub fn new(arg_dir: Option<&str>, mapping_file: &OsStr) -> Result<Self> {
+        let files_dir = files_directory(arg_dir)?.into();
+        let mapping = read_maps(mapping_file)?;
+        Ok(FileMapper { files_dir, mapping })
     }
 
-    fn get_file(&self, hex_code: &str) -> Option<PathBuf> {
+    pub fn get_file(&self, hex_code: &str) -> Option<PathBuf> {
         let file_name = self.mapping.get(hex_code);
         file_name.map(|file_name| self.files_dir.join(file_name))
     }
 }
 
-fn main_loop(device: rodio::Device, mfrc522: Mfrc522<Spidev, Pin>, file_mapper: FileMapper) -> Result<()> {
+fn main_loop(
+    device: rodio::Device,
+    mut mfrc522: Mfrc522<Spidev, Pin>,
+    file_mapper: FileMapper,
+) -> Result<()> {
     let mut playing: Option<String> = None;
     let mut current_sink: Option<rodio::Sink> = None;
     loop {
@@ -112,27 +121,26 @@ fn main_loop(device: rodio::Device, mfrc522: Mfrc522<Spidev, Pin>, file_mapper: 
             if Some(&encoded_id) == playing.as_ref() {
                 continue;
             }
-            let fname = file_mapper.get_file(encoded_id);
+            let fname = file_mapper.get_file(&encoded_id);
             let fname = match fname {
-                Ok(file_name) => file_name,
+                Some(file_name) => file_name,
                 None => {
                     error!("Card with id {} is not mapped", encoded_id);
                     continue;
                 }
-            }
+            };
             match File::open(&fname) {
                 Ok(opened_file) => {
-                    if let Ok(new_sink) = rodio::play_once(&device, BufReader::new(opened_file))
-                    {
+                    if let Ok(new_sink) = rodio::play_once(&device, BufReader::new(opened_file)) {
                         let old_sink = current_sink.replace(new_sink);
                         if let Some(sink) = old_sink {
                             sink.stop();
                         }
-                        info!("Playing {}", fname);
+                        info!("Playing {}", fname.display());
                     }
                 }
                 Err(error) => {
-                    error!("Error opening {}: {}", fname, error);
+                    error!("Error opening {}: {}", fname.display(), error);
                 }
             }
             playing.replace(encoded_id);
@@ -150,12 +158,14 @@ fn main_loop(device: rodio::Device, mfrc522: Mfrc522<Spidev, Pin>, file_mapper: 
 
 fn run(matches: ArgMatches) -> Result<()> {
     let mfrc522 = setup_rfid_reader()?;
-    let audio_device = rodio::default_output_device().ok_or_else(|| Error::new(ErrorKind::NotFound, "Audio could not be opened"))?;
-    let dir = files_dir(matches.value_of("directory"))?;
-    let map = read_maps(matches.value_of_os("mapping_file").unwrap())?;
-    let mapper = FileMapper::new(dir, map);
+    let audio_device = rodio::default_output_device()
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Audio could not be opened"))?;
+    let mapper = FileMapper::new(
+        matches.value_of("directory"),
+        matches.value_of_os("mapping_file").unwrap(),
+    )?;
     info!("Rfid player started");
-    main_loop(audio_device, mfrc522, mapper);
+    main_loop(audio_device, mfrc522, mapper)
 }
 
 fn main() {
@@ -188,5 +198,4 @@ fn main() {
             error!("We shouldn't have reached here");
         }
     }
-
 }
