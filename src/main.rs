@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate log;
 extern crate clap;
+extern crate env_logger;
 extern crate libc;
-extern crate simple_logger;
 
 extern crate hex;
 extern crate linux_embedded_hal as hal;
@@ -170,7 +170,7 @@ fn run(matches: ArgMatches) -> Result<()> {
 
 fn main() {
     setup_signals();
-    simple_logger::init().unwrap();
+    env_logger::init();
     log::set_max_level(log::LevelFilter::Info);
     let matches = App::new("rfid-audio")
         .about("Play mp3 files based on rfid sensor")
