@@ -2,7 +2,7 @@
 # card-hex mp3-file
 
 # available cards
-# b9bf9d84
+b9bf9d84 '1-04 Mozart_ Die Zauberflöte - Act 1.mp3'
 # b08ed632
 # 221c4634
 # d4fc9e2a

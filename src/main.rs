@@ -76,16 +76,26 @@ fn read_maps(mapping_file: &OsStr) -> Result<HashMap<String, String>> {
     let mut maps = HashMap::new();
     let mapping_file = File::open(mapping_file)?;
     let mapping_buf = BufReader::new(mapping_file);
-    for line in mapping_buf.lines() {
+    for (line_idx, line) in mapping_buf.lines().enumerate() {
         let line = line?;
         let line = line.trim();
         if line.is_empty() || line.find('#') == Some(0) {
             continue;
         }
-        let fields: Vec<&str> = line.split(" ").collect();
-        let (key, file) = (fields[0].to_string(), fields[fields.len() - 1].to_string());
+        let (key, file) = match line.find(' ') {
+            Some(indx) => {
+                let (k, v) = line.split_at(indx);
+                (k.trim(), v.trim())
+            }
+            None => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Line {}: '{}' format wrong", line_idx, line),
+                ));
+            }
+        };
         debug!("{} - {}", key, file);
-        maps.insert(key, file);
+        maps.insert(key.to_string(), file.to_string());
     }
     Ok(maps)
 }
