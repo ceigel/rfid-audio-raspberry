@@ -33,28 +33,30 @@ extern "C" fn handle_signals(signal: libc::c_int) {
     process::exit(1);
 }
 
-fn setup_rfid_reader() -> Result<Mfrc522<Spidev, Pin>> {
-    let mut spi = Spidev::open("/dev/spidev0.0").unwrap();
+fn setup_rfid_reader() -> std::result::Result<Mfrc522<Spidev, Pin>, hal::sysfs_gpio::Error> {
+    let mut spi = Spidev::open("/dev/spidev0.0")?;
     let options = SpidevOptions::new()
         .max_speed_hz(1_000_000)
         .mode(hal::spidev::SPI_MODE_0)
         .build();
-    spi.configure(&options).unwrap();
+    spi.configure(&options)?;
 
     let pin = Pin::new(25);
-    pin.export().unwrap();
+    pin.export()?;
     while !pin.is_exported() {}
-    pin.set_direction(Direction::Out).unwrap();
-    pin.set_value(1).unwrap();
+    pin.set_direction(Direction::Out)?;
+    pin.set_value(1)?;
 
-    let mut mfrc522 = Mfrc522::new(spi, pin).unwrap();
-    let vers = mfrc522.version().unwrap();
+    let mut mfrc522 = Mfrc522::new(spi, pin)?;
+    let vers = mfrc522.version()?;
 
     info!("VERSION: 0x{:x}", vers);
     if vers == 0x91 || vers == 0x92 {
         Ok(mfrc522)
     } else {
-        Err(Error::new(ErrorKind::NotFound, "Couldn't find RFID reader"))
+        Err(hal::sysfs_gpio::Error::Unexpected(
+            "Can't initialize rfid reader".to_string(),
+        ))
     }
 }
 
@@ -172,7 +174,8 @@ fn main_loop(
 }
 
 fn run(matches: ArgMatches) -> Result<()> {
-    let mfrc522 = setup_rfid_reader()?;
+    let mfrc522 =
+        setup_rfid_reader().map_err(|err| Error::new(ErrorKind::Other, err.to_string()))?;
     let audio_device = rodio::default_output_device()
         .ok_or_else(|| Error::new(ErrorKind::NotFound, "Audio could not be opened"))?;
     let mapper = FileMapper::new(
