@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate log;
 extern crate clap;
-extern crate env_logger;
 extern crate libc;
+extern crate syslog;
 
 extern crate hex;
 extern crate linux_embedded_hal as hal;
@@ -14,12 +14,13 @@ use core::convert::TryFrom;
 use hal::spidev::SpidevOptions;
 use hal::sysfs_gpio::Direction;
 use hal::{Pin, Spidev};
+use log::LevelFilter;
 use mfrc522::Mfrc522;
 use nix::sys::signal::{signal, SigHandler, Signal};
 use std::collections::HashMap;
 use std::env;
 use std::ffi::OsStr;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Error, ErrorKind, Result};
 use std::path::PathBuf;
 use std::process;
@@ -73,6 +74,7 @@ fn files_directory(arg_dir: Option<&str>) -> Result<String> {
 }
 
 fn read_maps(mapping_file: &OsStr) -> Result<HashMap<String, String>> {
+    info!("Reading mapping file");
     let mut maps = HashMap::new();
     let mapping_file = OpenOptions::new()
         .read(true)
@@ -97,7 +99,7 @@ fn read_maps(mapping_file: &OsStr) -> Result<HashMap<String, String>> {
                 ));
             }
         };
-        debug!("{} - {}", key, file);
+        debug!("map: {} - {}", key, file);
         maps.insert(key.to_string(), file.to_string());
     }
     Ok(maps)
@@ -183,8 +185,7 @@ fn run(matches: ArgMatches) -> Result<()> {
 
 fn main() {
     setup_signals();
-    env_logger::init();
-    log::set_max_level(log::LevelFilter::Info);
+    syslog::init_unix(syslog::Facility::LOG_SYSLOG, LevelFilter::Debug).unwrap();
     let matches = App::new("rfid-audio")
         .about("Play mp3 files based on rfid sensor")
         .arg(
