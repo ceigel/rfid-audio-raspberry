@@ -1,10 +1,12 @@
 [Unit]
 Description=rfid-audio service
 ConditionPathExists=/home/ceigel/rfid-audio/target/armv7-unknown-linux-gnueabihf/debug/rfid-audio
-After=network-online.target
- 
+After=syslog.target network-online.target
+
 [Service]
 Type=simple
+ExecStart=/home/ceigel/rfid-audio/target/armv7-unknown-linux-gnueabihf/debug/rfid-audio -m /home/ceigel/rfid-audio/mapping.txt -d /home/ceigel/music/
+ExecStop=/bin/true
 User=rfid-audio
 Group=rfid-audio
 LimitNOFILE=1024
@@ -12,17 +14,8 @@ LimitNOFILE=1024
 Restart=always
 RestartSec=60
 
-ExecStart=/home/ceigel/rfid-audio/target/armv7-unknown-linux-gnueabihf/debug/rfid-audio -m /home/ceigel/rfid-audio/mapping.txt -d /home/ceigel/music/
 WorkingDirectory=/home/ceigel/rfid-audio/
-
-# make sure log directory exists and owned by syslog
-PermissionsStartOnly=true
-ExecStartPre=/bin/mkdir -p /var/log/rfid-audio
-ExecStartPre=/bin/chown root:adm /var/log/rfid-audio
-ExecStartPre=/bin/chmod 755 /var/log/rfid-audio
-StandardOutput=syslog
-StandardError=syslog
 SyslogIdentifier=rfid-audio
- 
+
 [Install]
 WantedBy=multi-user.target
