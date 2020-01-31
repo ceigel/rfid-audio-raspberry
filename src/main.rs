@@ -19,7 +19,7 @@ use nix::sys::signal::{signal, SigHandler, Signal};
 use std::collections::HashMap;
 use std::env;
 use std::ffi::OsStr;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Error, ErrorKind, Result};
 use std::path::PathBuf;
 use std::process;
@@ -74,7 +74,10 @@ fn files_directory(arg_dir: Option<&str>) -> Result<String> {
 
 fn read_maps(mapping_file: &OsStr) -> Result<HashMap<String, String>> {
     let mut maps = HashMap::new();
-    let mapping_file = File::open(mapping_file)?;
+    let mapping_file = OpenOptions::new()
+        .read(true)
+        .write(false)
+        .open(mapping_file)?;
     let mapping_buf = BufReader::new(mapping_file);
     for (line_idx, line) in mapping_buf.lines().enumerate() {
         let line = line?;
@@ -139,7 +142,7 @@ fn main_loop(
                     continue;
                 }
             };
-            match File::open(&fname) {
+            match OpenOptions::new().read(true).write(false).open(&fname) {
                 Ok(opened_file) => {
                     if let Ok(new_sink) = rodio::play_once(&device, BufReader::new(opened_file)) {
                         let old_sink = current_sink.replace(new_sink);
