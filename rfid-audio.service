@@ -1,7 +1,7 @@
 [Unit]
 Description=rfid-audio service
 ConditionPathExists=/home/ceigel/rfid-audio/target/armv7-unknown-linux-gnueabihf/debug/rfid-audio
-After=syslog.target network-online.target
+After=network-online.target sound.target
 
 [Service]
 Type=simple
