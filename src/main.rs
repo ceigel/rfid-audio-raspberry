@@ -174,10 +174,13 @@ fn main_loop(
 }
 
 fn run(matches: ArgMatches) -> Result<()> {
+    debug!("Setup rfid reader");
     let mfrc522 =
         setup_rfid_reader().map_err(|err| Error::new(ErrorKind::Other, err.to_string()))?;
+    debug!("Setup audio");
     let audio_device = rodio::default_output_device()
         .ok_or_else(|| Error::new(ErrorKind::NotFound, "Audio could not be opened"))?;
+    debug!("Setup mapping structures");
     let mapper = FileMapper::new(
         matches.value_of("directory"),
         matches.value_of_os("mapping_file").unwrap(),
@@ -187,6 +190,7 @@ fn run(matches: ArgMatches) -> Result<()> {
 }
 
 fn main() {
+    debug!("Start");
     setup_signals();
     syslog::init_unix(syslog::Facility::LOG_SYSLOG, LevelFilter::Debug).unwrap();
     let matches = App::new("rfid-audio")
@@ -207,6 +211,7 @@ fn main() {
                 .required(true),
         )
         .get_matches();
+    debug!("Init done");
     match run(matches) {
         Err(e) => {
             error!("We caught an error: {}", e);

@@ -1,4 +1,5 @@
 # Format: 
+# raspi mac; B8:27:EB:7E:2D:DB
 # card-hex mp3-file
 
 # available cards
