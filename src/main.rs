@@ -34,6 +34,7 @@ extern "C" fn handle_signals(signal: libc::c_int) {
 }
 
 fn setup_rfid_reader() -> std::result::Result<Mfrc522<Spidev, Pin>, hal::sysfs_gpio::Error> {
+    debug!("Open spi");
     let mut spi = Spidev::open("/dev/spidev0.0")?;
     let options = SpidevOptions::new()
         .max_speed_hz(1_000_000)
@@ -41,12 +42,14 @@ fn setup_rfid_reader() -> std::result::Result<Mfrc522<Spidev, Pin>, hal::sysfs_g
         .build();
     spi.configure(&options)?;
 
+    debug!("Setup pin 25");
     let pin = Pin::new(25);
     pin.export()?;
     while !pin.is_exported() {}
     pin.set_direction(Direction::Out)?;
     pin.set_value(1)?;
 
+    debug!("Build mfrc522");
     let mut mfrc522 = Mfrc522::new(spi, pin)?;
     let vers = mfrc522.version()?;
 
