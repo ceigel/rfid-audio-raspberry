@@ -156,7 +156,11 @@ fn main_loop(
                         if let Some(sink) = old_sink {
                             sink.stop();
                         }
-                        info!("Playing {}", fname.display());
+                        info!(
+                            "Playing {} at volume {}",
+                            fname.display(),
+                            current_sink.as_ref().unwrap().volume()
+                        );
                     }
                 }
                 Err(error) => {
