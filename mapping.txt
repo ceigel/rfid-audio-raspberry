@@ -6,9 +6,9 @@
 b9bf9d84 1-04 Mozart_ Die Zauberflöte - Act 1.mp3
 b08ed632 2-09 Mozart_ Die Zauberflöte - Act 2.mp3
 221c4634 2-25 Mozart_ Die Zauberflöte - Act 2.mp3
-# d4fc9e2a
-# d46af82a
-# 242cc82b
+d4fc9e2a 01 Mamma Maria.mp3
+d46af82a 16 Raindrops Keep Falling On My Head.mp3
+242cc82b Disney - Jungle Book - King of the Swingers.mp3
 # 1488e42b
 # f4da1e2a
 # 0489af2b
