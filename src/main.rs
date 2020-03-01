@@ -22,7 +22,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Error, ErrorKind, Result};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 use std::thread;
 use std::time::Duration;
@@ -128,6 +128,42 @@ impl FileMapper {
     }
 }
 
+struct PlayList {
+    songs: Vec<PathBuf>,
+    index: usize,
+}
+
+impl PlayList {
+    pub fn empty() -> Self {
+        Self {
+            songs: vec![],
+            index: 0,
+        }
+    }
+    pub fn new(songs: impl Iterator<Item = PathBuf>) -> Self {
+        let mut songs: Vec<PathBuf> = songs.collect();
+        songs.sort();
+        Self {
+            songs: songs,
+            index: 0,
+        }
+    }
+    pub fn current_song(&self) -> Option<&Path> {
+        if self.done() {
+            None
+        } else {
+            Some(self.songs[self.index].as_path())
+        }
+    }
+    pub fn done(&self) -> bool {
+        self.index == self.songs.len()
+    }
+    pub fn advance(&mut self) -> Option<&Path> {
+        self.index += 1;
+        self.current_song()
+    }
+}
+
 fn main_loop(
     device: rodio::Device,
     mut mfrc522: Mfrc522<Spidev, Pin>,
@@ -135,11 +171,15 @@ fn main_loop(
 ) -> Result<()> {
     let mut playing: Option<String> = None;
     let mut current_sink: Option<rodio::Sink> = None;
+    let mut playlist: PlayList = PlayList::empty();
     loop {
         if let Ok(uid) = mfrc522.reqa().and_then(|atqa| mfrc522.select(&atqa)) {
             let encoded_id = hex::encode(uid.bytes());
             if Some(&encoded_id) == playing.as_ref() {
                 continue;
+            }
+            if let Some(sink) = current_sink.take() {
+                sink.stop();
             }
             let fname = file_mapper.get_file(&encoded_id);
             let fname = match fname {
@@ -149,30 +189,42 @@ fn main_loop(
                     continue;
                 }
             };
+            if !fname.exists() {
+                error!(
+                    "Mapped path {:?} for card with id {} does not exist",
+                    fname, encoded_id
+                );
+                continue;
+            }
+            if fname.is_dir() {
+                let entries = fname.read_dir()?;
+                playlist = PlayList::new(
+                    entries.map(|dir_entry| dir_entry.expect("can't read direntry").path()),
+                );
+            } else {
+                playlist = PlayList::new(std::iter::once(fname).map(|fp| fp.to_path_buf()));
+            }
+            playing.replace(encoded_id);
+        }
+        if let Some(sink) = current_sink.as_ref() {
+            if sink.empty() {
+                current_sink.take();
+                playlist.advance();
+            }
+        }
+        if current_sink.is_none() && !playlist.done() {
+            let fname = playlist
+                .current_song()
+                .expect("Playlist is not done but empty");
             match OpenOptions::new().read(true).write(false).open(&fname) {
                 Ok(opened_file) => {
                     if let Ok(new_sink) = rodio::play_once(&device, BufReader::new(opened_file)) {
-                        let old_sink = current_sink.replace(new_sink);
-                        if let Some(sink) = old_sink {
-                            sink.stop();
-                        }
-                        info!(
-                            "Playing {} at volume {}",
-                            fname.display(),
-                            current_sink.as_ref().unwrap().volume()
-                        );
+                        current_sink.replace(new_sink);
+                        info!("Playing {} ", fname.display());
                     }
                 }
                 Err(error) => {
                     error!("Error opening {}: {}", fname.display(), error);
-                }
-            }
-            playing.replace(encoded_id);
-        } else {
-            if let Some(sink) = current_sink.as_ref() {
-                if sink.empty() {
-                    current_sink.take();
-                    playing.take();
                 }
             }
         }
