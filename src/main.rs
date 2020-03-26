@@ -175,7 +175,7 @@ fn main_loop(
     loop {
         if let Ok(uid) = mfrc522.reqa().and_then(|atqa| mfrc522.select(&atqa)) {
             let encoded_id = hex::encode(uid.bytes());
-            if Some(&encoded_id) == playing.as_ref() {
+            if !playlist.done() && Some(&encoded_id) == playing.as_ref() {
                 continue;
             }
             if let Some(sink) = current_sink.take() {
