@@ -172,15 +172,20 @@ fn main_loop(
     let mut playing: Option<String> = None;
     let mut current_sink: Option<rodio::Sink> = None;
     let mut playlist: PlayList = PlayList::empty();
+    let mut no_card = true;
     loop {
+        let previous_no_card = no_card;
         if let Ok(uid) = mfrc522.reqa().and_then(|atqa| mfrc522.select(&atqa)) {
+            no_card = false;
             let encoded_id = hex::encode(uid.bytes());
             if !playlist.done() && Some(&encoded_id) == playing.as_ref() {
                 if let Some(ref current_sink) = current_sink {
-                    if current_sink.is_paused() {
-                        current_sink.play();
-                    } else {
-                        current_sink.pause();
+                    if previous_no_card {
+                        if current_sink.is_paused() {
+                            current_sink.play();
+                        } else {
+                            current_sink.pause();
+                        }
                     }
                 }
                 continue;
@@ -212,6 +217,8 @@ fn main_loop(
                 playlist = PlayList::new(std::iter::once(fname).map(|fp| fp.to_path_buf()));
             }
             playing.replace(encoded_id);
+        } else {
+            no_card = true;
         }
         if let Some(sink) = current_sink.as_ref() {
             if sink.empty() {
