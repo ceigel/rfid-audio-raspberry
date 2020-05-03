@@ -176,6 +176,13 @@ fn main_loop(
         if let Ok(uid) = mfrc522.reqa().and_then(|atqa| mfrc522.select(&atqa)) {
             let encoded_id = hex::encode(uid.bytes());
             if !playlist.done() && Some(&encoded_id) == playing.as_ref() {
+                if let Some(ref current_sink) = current_sink {
+                    if current_sink.is_paused() {
+                        current_sink.play();
+                    } else {
+                        current_sink.pause();
+                    }
+                }
                 continue;
             }
             if let Some(sink) = current_sink.take() {
