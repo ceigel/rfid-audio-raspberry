@@ -25,7 +25,7 @@ use std::io::{BufRead, BufReader, Error, ErrorKind, Result};
 use std::path::{Path, PathBuf};
 use std::process;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 extern "C" fn handle_signals(signal: libc::c_int) {
     let signal = Signal::try_from(signal).unwrap();
@@ -172,15 +172,15 @@ fn main_loop(
     let mut playing: Option<String> = None;
     let mut current_sink: Option<rodio::Sink> = None;
     let mut playlist: PlayList = PlayList::empty();
-    let mut no_card = true;
+    let mut count_no_card: u32 = 0;
     loop {
-        let previous_no_card = no_card;
         if let Ok(uid) = mfrc522.reqa().and_then(|atqa| mfrc522.select(&atqa)) {
-            no_card = false;
+            let last_count_no_card = count_no_card;
+            count_no_card = 0;
             let encoded_id = hex::encode(uid.bytes());
             if !playlist.done() && Some(&encoded_id) == playing.as_ref() {
                 if let Some(ref current_sink) = current_sink {
-                    if previous_no_card {
+                    if last_count_no_card >= 2 {
                         if current_sink.is_paused() {
                             current_sink.play();
                         } else {
@@ -218,7 +218,7 @@ fn main_loop(
             }
             playing.replace(encoded_id);
         } else {
-            no_card = true;
+            count_no_card += 1;
         }
         if let Some(sink) = current_sink.as_ref() {
             if sink.empty() {
