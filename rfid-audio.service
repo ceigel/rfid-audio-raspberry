@@ -1,11 +1,11 @@
 [Unit]
 Description=rfid-audio service
-ConditionPathExists=/home/ceigel/rfid-audio/target/armv7-unknown-linux-gnueabihf/debug/rfid-audio
+ConditionPathExists=/usr/lib/rfid-audio/target/armv7-unknown-linux-gnueabihf/debug/rfid-audio
 After=network-online.target sound.target
 
 [Service]
 Type=simple
-ExecStart=/home/ceigel/rfid-audio/target/armv7-unknown-linux-gnueabihf/debug/rfid-audio -m /home/ceigel/rfid-audio/mapping.txt -d /home/ceigel/music/
+ExecStart=/usr/lib/rfid-audio/target/armv7-unknown-linux-gnueabihf/debug/rfid-audio -m /usr/lib/rfid-audio/mapping.txt -d /usr/lib/music/
 ExecStop=/bin/true
 User=rfid-audio
 Group=rfid-audio
@@ -14,7 +14,7 @@ LimitNOFILE=1024
 Restart=always
 RestartSec=60
 
-WorkingDirectory=/home/ceigel/rfid-audio/
+WorkingDirectory=/usr/lib/rfid-audio/
 SyslogIdentifier=rfid-audio
 
 [Install]
